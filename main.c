@@ -3,6 +3,7 @@
  * @author Andrew Morton, 2018
  */
 #include <LPC17xx.h>
+#include "lpc17xx.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -66,41 +67,46 @@ void osKernelInitialize() {
 		TCB_struct[task_id].task_id = task_id;
 		TCB_struct[task_id].stack_pointer = vector_table[0] - 2048 - 1024 * i;
 		TCB_struct[task_id].state = 0;
-		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_struct[5-i].stack_pointer);
+		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_struct[task_id].stack_pointer);
 	}
 	
 	// create idle task at TCB 0
-	osCreateTask(osIdleTask, NULL, 0);
-	
+	//osCreateTask(osIdleTask, NULL, 0);
 }
 
 void osKernelStart() {
 	// set MSP to main stack base addr
 	__set_MSP(vector_table[0]);
 	// get Control Register and set bit 1 to 1
-	uint32_t control_register = __get_CONTROL() | (1<<1) ;
-	__set_CONTROL(control_register);
+	__set_CONTROL(__get_CONTROL() | CONTROL_SPSEL_Msk);
 	
 	// set PSP to point to idle task (task 0)
-	__set_PSP(TCB_struct[0].stack_pointer);
-	// set curr_sp to task 0
 	curr_sp = TCB_struct[0].stack_pointer;
-	
+	__set_PSP(curr_sp);
+
 	// set interrupt priorities for SysTick_Handler and PendSV_Handler
 	NVIC_SetPriority(SysTick_IRQn, 0x00);
 	NVIC_SetPriority(PendSV_IRQn, 0xff);
 	
 	// configure SysTick_Handler to invoke every 1s
-	SysTick_Config(SystemCoreClock); 
+	
+	SysTick_Config(SystemCoreClock/10); 
+	osIdleTask(NULL);
 }
 
-
 void SysTick_Handler(void) {
-	// determine next sp
+	// determine next task from queue
+	uint8_t next_task;
 	// set next_sp to next task's stack pointer
 	// TODO: use vectors
 	
-	// invoke PendSV interrupt
+	// invoke PendSV exception
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+	
+	// update stack pointer of curr_task
+	TCB_struct[curr_task].stack_pointer = curr_sp;
+	curr_task = next_task;
+	
 	
 }
 
@@ -121,9 +127,8 @@ __asm void PendSV_Handler(void) {
 }
 
 int main(void) {
-	
 	printf("\nStarting...\n\n");
-	
+		
 	osKernelInitialize();
 	// create threads
 	osKernelStart();
