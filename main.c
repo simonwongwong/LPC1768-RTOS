@@ -20,16 +20,17 @@ typedef struct {
 TCB_t TCB_struct[6];
 
 uint32_t *vector_table = 0x0;
-uint32_t curr_sp;
-uint32_t next_sp;
-uint8_t num_tasks = 0;
+uint32_t *curr_sp;
+uint32_t *next_sp;
+uint8_t num_tasks = 1;
 uint8_t curr_task = 0;
 
-uint32_t msTicks = 0;
 
 void osIdleTask(void *arg) {
 	(void) arg;
-	for(;;) {}
+	while(1) {
+		//idle_count++;
+	}
 }
 
 void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio){
@@ -38,13 +39,9 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio){
 	
 	// assign priority
 	task_tcb->prio = prio;
-	
 	// set addr of PSR to base of stack
 	uint32_t *PSR = (uint32_t *)task_tcb->stack_pointer;
-	// set all registers (PSR to R4) to 0
-	for (int i = 0; i < 16; i++) {
-		*(PSR - i) = 0;
-	}
+	
 	// set stack_pointer to point to R4 (top of stack)
 	task_tcb->stack_pointer = (uint32_t)(PSR - 15);
 	
@@ -69,9 +66,6 @@ void osKernelInitialize() {
 		TCB_struct[task_id].state = 0;
 		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_struct[task_id].stack_pointer);
 	}
-	
-	// create idle task at TCB 0
-	//osCreateTask(osIdleTask, NULL, 0);
 }
 
 void osKernelStart() {
@@ -81,8 +75,8 @@ void osKernelStart() {
 	__set_CONTROL(__get_CONTROL() | CONTROL_SPSEL_Msk);
 	
 	// set PSP to point to idle task (task 0)
-	curr_sp = TCB_struct[0].stack_pointer;
-	__set_PSP(curr_sp);
+	curr_sp = &TCB_struct[0].stack_pointer;
+	__set_PSP(*curr_sp);
 
 	// set interrupt priorities for SysTick_Handler and PendSV_Handler
 	NVIC_SetPriority(SysTick_IRQn, 0x00);
@@ -91,38 +85,51 @@ void osKernelStart() {
 	// configure SysTick_Handler to invoke every 1s
 	
 	SysTick_Config(SystemCoreClock/10); 
-	osIdleTask(NULL);
+	while(1) {
+		printf("in idle task\n");
+		while(10000);
+	}
+
 }
 
 void SysTick_Handler(void) {
 	// determine next task from queue
-	uint8_t next_task;
+	curr_task = 1 - curr_task;
+	printf("running task %d\n", curr_task);
+	next_sp = &TCB_struct[curr_task].stack_pointer;
 	// set next_sp to next task's stack pointer
 	// TODO: use vectors
-	
+
 	// invoke PendSV exception
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
-	
-	// update stack pointer of curr_task
-	TCB_struct[curr_task].stack_pointer = curr_sp;
-	curr_task = next_task;
-	
-	
+
+}
+
+void test_task(void *arg) {
+	while(1){
+		printf("in task 1\n");
+		while(10000);
+	}
 }
 
 __asm void PendSV_Handler(void) {
-  // Push registers onto current stack
-	PUSH {R4-R11}
-	// load address of curr_sp global variable into R1
-	LDR R1, =__cpp(&curr_sp)
-	// store stack pointer into curr_sp variable
-	STR R13, [R1]
-	// load address of next_sp into R1
-	LDR R1, =__cpp(&next_sp)
-	// load next_sp (stack pointer) into R13
-	LDR R13, [R1]
-	// pop registers from next stack back into the stack
-	POP {R4-R11}
+	CPSID i // disable interrupts
+	MRS R0, MSP // store MSP into R0
+	MRS R1, PSP // store PSP into R1
+	MOV R13, R1 // move PSP into SP
+	PUSH {R4-R11} // Push registers onto current stack
+	LDR R1, =__cpp(&curr_sp) // load address of curr_sp global variable into R1
+	LDR R5, [R1] 
+	STR R13, [R5] // store stack pointer
+	LDR R2, =__cpp(&next_sp) // load address of next_sp into R1
+	LDR R3, [R2] 
+	LDR R13, [R3]// load next_sp (stack pointer) into R13
+	STR R3, [R1] // change curr_sp to point to new task
+	POP {R4-R11} // pop registers from next stack
+	MOV R1, R13
+	MSR PSP, R1 // save PSP after POP
+	MSR MSP, R0 // restore MSP from R0
+	CPSIE i	// enable interrupts
 	BX		LR
 }
 
@@ -130,7 +137,7 @@ int main(void) {
 	printf("\nStarting...\n\n");
 		
 	osKernelInitialize();
-	// create threads
+	osCreateTask(test_task, NULL, 1);
 	osKernelStart();
 		
 }
