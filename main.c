@@ -3,39 +3,26 @@
  * @author Andrew Morton, 2018
  */
 #include <LPC17xx.h>
-#include "lpc17xx.h"
+#include "queue.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
 typedef void (*rtosTaskFunc_t)(void *args);
 
-typedef struct {
-	uint8_t task_id;
-	uint32_t stack_pointer;
-	uint8_t state; // 0: inactive, 1: terminated, 2: blocked, 3: ready, 4: running
-	uint8_t prio; // priorities 0 to 7, with 0 being lowest (IDLE task)
-} TCB_t;
-
-TCB_t TCB_struct[6];
+TCB_t TCB_array[6];
 
 uint32_t *vector_table = 0x0;
 uint32_t *curr_sp;
 uint32_t *next_sp;
 uint8_t num_tasks = 1;
 uint8_t curr_task = 0;
+uint32_t bit_vector = 1;
 
-
-void osIdleTask(void *arg) {
-	(void) arg;
-	while(1) {
-		//idle_count++;
-	}
-}
 
 void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio){
 	// assign TCB
-	TCB_t *task_tcb = &TCB_struct[num_tasks++];
+	TCB_t *task_tcb = &TCB_array[num_tasks++];
 	
 	// assign priority
 	task_tcb->prio = prio;
@@ -51,6 +38,7 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio){
 	*(PSR - 1) = (uint32_t)func;
 	// set R0 value
 	*(PSR - 7) = (uint32_t)args;
+	task_tcb->next_task = 0;
 	
 	// TODO: add task_id to appropriate ready queue
 }
@@ -61,10 +49,11 @@ void osKernelInitialize() {
 	// initialize TCB stack pointers
 	for(int i = 0; i < 6; i++) {
 		task_id = 5 - i;
-		TCB_struct[task_id].task_id = task_id;
-		TCB_struct[task_id].stack_pointer = vector_table[0] - 2048 - 1024 * i;
-		TCB_struct[task_id].state = 0;
-		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_struct[task_id].stack_pointer);
+		TCB_array[task_id].task_id = task_id;
+		TCB_array[task_id].stack_pointer = vector_table[0] - 2048 - 1024 * i;
+		TCB_array[task_id].state = 0;
+		TCB_array[task_id].next_task = 0;
+		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_array[task_id].stack_pointer);
 	}
 }
 
@@ -75,28 +64,33 @@ void osKernelStart() {
 	__set_CONTROL(__get_CONTROL() | CONTROL_SPSEL_Msk);
 	
 	// set PSP to point to idle task (task 0)
-	curr_sp = &TCB_struct[0].stack_pointer;
+	curr_sp = &TCB_array[0].stack_pointer;
 	__set_PSP(*curr_sp);
 
 	// set interrupt priorities for SysTick_Handler and PendSV_Handler
 	NVIC_SetPriority(SysTick_IRQn, 0x00);
 	NVIC_SetPriority(PendSV_IRQn, 0xff);
 	
-	// configure SysTick_Handler to invoke every 1s
-	
+	// configure SysTick_Handler to invoke every 100ms
 	SysTick_Config(SystemCoreClock/10); 
+	
+	// transform into idle task (0)
 	while(1) {
 		printf("in idle task\n");
-		while(10000);
 	}
-
 }
+
+
+//uint8_t osNextTask() {
+//	// function that returns the next task to run and returns the task_id
+//	return(1);
+//}
 
 void SysTick_Handler(void) {
 	// determine next task from queue
 	curr_task = 1 - curr_task;
-	printf("running task %d\n", curr_task);
-	next_sp = &TCB_struct[curr_task].stack_pointer;
+	// printf("running task %d\n", curr_task);
+	next_sp = &TCB_array[curr_task].stack_pointer;
 	// set next_sp to next task's stack pointer
 	// TODO: use vectors
 
@@ -108,7 +102,6 @@ void SysTick_Handler(void) {
 void test_task(void *arg) {
 	while(1){
 		printf("in task 1\n");
-		while(10000);
 	}
 }
 
@@ -133,11 +126,12 @@ __asm void PendSV_Handler(void) {
 	BX		LR
 }
 
+
 int main(void) {
 	printf("\nStarting...\n\n");
-		
+	
 	osKernelInitialize();
 	osCreateTask(test_task, NULL, 1);
 	osKernelStart();
-		
+
 }
