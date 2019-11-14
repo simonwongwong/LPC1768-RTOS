@@ -11,14 +11,17 @@
 typedef void (*rtosTaskFunc_t)(void *args);
 
 TCB_t TCB_array[6];
+queue queue_list[8];
 
 uint32_t *vector_table = 0x0;
 uint32_t *curr_sp;
 uint32_t *next_sp;
 uint8_t num_tasks = 1;
-uint8_t curr_task = 0;
-uint32_t bit_vector = 1;
 
+uint32_t queue_vector = 1;
+
+
+uint8_t tasknum[] = {1,2,3,4,5};
 
 void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio){
 	// assign TCB
@@ -39,6 +42,7 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio){
 	// set R0 value
 	*(PSR - 7) = (uint32_t)args;
 	task_tcb->next_task = 0;
+	enqueue(&queue_list[prio], task_tcb, &queue_vector);
 	
 	// TODO: add task_id to appropriate ready queue
 }
@@ -76,7 +80,7 @@ void osKernelStart() {
 	
 	// transform into idle task (0)
 	while(1) {
-		printf("in idle task\n");
+		//printf("in idle task\n");
 	}
 }
 
@@ -88,11 +92,13 @@ void osKernelStart() {
 
 void SysTick_Handler(void) {
 	// determine next task from queue
-	curr_task = 1 - curr_task;
-	// printf("running task %d\n", curr_task);
-	next_sp = &TCB_array[curr_task].stack_pointer;
-	// set next_sp to next task's stack pointer
-	// TODO: use vectors
+	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
+	uint8_t next_task;
+	
+	// if next_queue is 0, run idle task (0) else dequeue next task.
+	next_task = next_queue ? dequeue(&queue_list[next_queue], &queue_vector) : 0;
+	next_sp = &TCB_array[next_task].stack_pointer;
+
 
 	// invoke PendSV exception
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
@@ -100,9 +106,9 @@ void SysTick_Handler(void) {
 }
 
 void test_task(void *arg) {
-	while(1){
-		printf("in task 1\n");
-	}
+	uint8_t tasknum = *(uint8_t *)arg;
+	printf("in task %d\n", tasknum);
+	while(1);
 }
 
 __asm void PendSV_Handler(void) {
@@ -131,7 +137,12 @@ int main(void) {
 	printf("\nStarting...\n\n");
 	
 	osKernelInitialize();
-	osCreateTask(test_task, NULL, 1);
+	osCreateTask(test_task, &tasknum[0], 1);
+	osCreateTask(test_task, &tasknum[1], 3);
+	osCreateTask(test_task, &tasknum[2], 3);
+	osCreateTask(test_task, &tasknum[3], 4);
+	osCreateTask(test_task, &tasknum[4], 4);
+	printf("\nfinishing...\n\n");
 	osKernelStart();
 
 }

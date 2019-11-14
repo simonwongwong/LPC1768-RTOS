@@ -14,5 +14,5 @@ typedef struct{
 	TCB_t *tail;
 } queue;
 
-void enqueue(queue *q, TCB_t *task, uint32_t *bv);
-uint8_t dequeue(queue *q, uint32_t *bv);
+void enqueue(queue *q, TCB_t *task, uint32_t *queue_vector);
+uint8_t dequeue(queue *q, uint32_t *queue_vector);
