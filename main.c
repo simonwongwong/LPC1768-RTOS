@@ -14,7 +14,7 @@ TCB_t TCB_array[6];
 TCB_t *running_task;
 queue queue_list[8];
 
-uint32_t *vector_table = 0x0;
+
 uint32_t *curr_sp;
 uint32_t *next_sp;
 uint32_t queue_vector = 1;
@@ -50,6 +50,7 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 
 void osKernelInitialize()
 {
+	uint32_t *vector_table = 0x0;
 	printf("main stack base pointer: %x\n", vector_table[0]);
 	uint8_t task_id;
 	// initialize TCB stack pointers
@@ -66,6 +67,7 @@ void osKernelInitialize()
 
 void osKernelStart()
 {
+	uint32_t *vector_table = 0x0;
 	// set MSP to main stack base addr
 	__set_MSP(vector_table[0]);
 	// get Control Register and set bit 1 to 1
@@ -116,41 +118,35 @@ void SysTick_Handler(void)
 
 void test_task(void *arg)
 {
-	uint8_t tasknum = *(uint8_t *)arg;
-	printf("in task %d\n", tasknum);
-	while (1)
-		;
+	for(int i = 0; i < 50; i++)
+	{
+		uint8_t tasknum = *(uint8_t *)arg;
+		printf("in task %d\n", tasknum);
+	}
+	running_task->state = 2;
+	while(1);
 }
 
 __asm void PendSV_Handler(void)
 {
 	CPSID i // disable interrupts
-		MRS R0,
-		MSP // store MSP into R0
-			MRS R1,
-		PSP // store PSP into R1
-			MOV R13,
-		R1				   // move PSP into SP
-			PUSH{R4 - R11} // Push registers onto current stack
-	LDR R1,
-		= __cpp(&curr_sp) // load address of curr_sp global variable into R1
-		LDR R5,
-		[R1] STR R13, [R5] // store stack pointer
-		LDR R2,
-		= __cpp(&next_sp) // load address of next_sp into R1
-		LDR R3,
-		[R2] LDR R13, [R3] // load next_sp (stack pointer) into R13
-		STR R3,
-		[R1]			 // change curr_sp to point to new task
-		POP { R4 - R11 } // pop registers from next stack
-	MOV R1,
-		R13
-			MSR PSP,
-		R1 // save PSP after POP
-			MSR MSP,
-		R0			// restore MSP from R0
-			CPSIE i // enable interrupts
-				BX LR
+	MRS R0, MSP // store MSP into R0
+	MRS R1, PSP // store PSP into R1
+	MOV R13, R1	// move PSP into SP
+	PUSH {R4 - R11} // Push registers onto current stack
+	LDR R1, = __cpp(&curr_sp) // load address of curr_sp global variable into R1
+	LDR R5,	[R1] 
+	STR R13, [R5] // store stack pointer
+	LDR R2, = __cpp(&next_sp) // load address of next_sp into R1
+	LDR R3, [R2] 
+	LDR R13, [R3] // load next_sp (stack pointer) into R13
+	STR R3, [R1] // change curr_sp to point to new task
+	POP {R4 - R11} // pop registers from next stack
+	MOV R1,	R13
+	MSR PSP, R1 // save PSP after POP
+	MSR MSP, R0 // restore MSP from R0
+	CPSIE i // enable interrupts
+	BX LR
 }
 
 int main(void)
