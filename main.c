@@ -42,9 +42,10 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 	// set R0 value
 	*(PSR - 7) = (uint32_t)args;
 	task_tcb->next_task = 0;
-	enqueue(&queue_list[prio], task_tcb, &queue_vector);
 
-	// TODO: add task_id to appropriate ready queue
+	// set state to READY and add to queue
+	task_tcb->state = 3;
+	enqueue(&queue_list[prio], task_tcb, &queue_vector);
 }
 
 void osKernelInitialize()
@@ -74,6 +75,7 @@ void osKernelStart()
 	curr_sp = &TCB_array[0].stack_pointer;
 	__set_PSP(*curr_sp);
 
+	// first task should be IDLE task
 	running_task = &TCB_array[0];
 
 	// set interrupt priorities for SysTick_Handler and PendSV_Handler
@@ -90,11 +92,6 @@ void osKernelStart()
 	}
 }
 
-//uint8_t osNextTask() {
-//	// function that returns the next task to run and returns the task_id
-//	return(1);
-//}
-
 void SysTick_Handler(void)
 {
 	// determine next task from queue
@@ -106,7 +103,7 @@ void SysTick_Handler(void)
 	if (running_task->state >= 3)
 	{
 		running_task->state = 3;
-		enqueue(&queue_list[TCB_array[running_task].prio], &queue_vector);
+		enqueue(&queue_list[running_task->prio], running_task, &queue_vector);
 	}
 
 	// update running task
