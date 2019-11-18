@@ -11,6 +11,7 @@
 typedef void (*rtosTaskFunc_t)(void *args);
 
 TCB_t TCB_array[6];
+TCB_t *running_task;
 queue queue_list[8];
 
 uint32_t *vector_table = 0x0;
@@ -18,7 +19,6 @@ uint32_t *curr_sp;
 uint32_t *next_sp;
 uint32_t queue_vector = 1;
 uint8_t num_tasks = 1;
-uint8_t running_task = 0;
 
 uint8_t tasknum[] = {1, 2, 3, 4, 5};
 
@@ -74,6 +74,8 @@ void osKernelStart()
 	curr_sp = &TCB_array[0].stack_pointer;
 	__set_PSP(*curr_sp);
 
+	running_task = &TCB_array[0];
+
 	// set interrupt priorities for SysTick_Handler and PendSV_Handler
 	NVIC_SetPriority(SysTick_IRQn, 0x00);
 	NVIC_SetPriority(PendSV_IRQn, 0xff);
@@ -97,17 +99,21 @@ void SysTick_Handler(void)
 {
 	// determine next task from queue
 	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
-	uint8_t next_task;
+	TCB_t *next_task;
 
-	// if next_queue is 0, run idle task (0) else dequeue next task.
-	next_task = next_queue ? dequeue(&queue_list[next_queue], &queue_vector) : 0;
-	next_sp = &TCB_array[next_task].stack_pointer;
+	next_task = dequeue(&queue_list[next_queue], &queue_vector);
+	next_sp = &(next_task->stack_pointer);
 
-	// requeue running task based on STATE
-	// TODO: this ^^
+	// requeue running task if state is ready or running
+	if (running_task->state >= 3)
+	{
+		running_task->state = 3;
+		enqueue(&queue_list[TCB_array[running_task].prio], &queue_vector);
+	}
 
 	// update running task
 	running_task = next_task;
+	running_task->state = 4;
 
 	// invoke PendSV exception
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
