@@ -99,9 +99,7 @@ void SysTick_Handler(void)
 {
 	// determine next task from queue
 	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
-	TCB_t *next_task;
-
-	next_task = dequeue(&queue_list[next_queue], &queue_vector);
+	TCB_t *next_task = dequeue(&queue_list[next_queue], &queue_vector);
 	next_sp = &(next_task->stack_pointer);
 
 	// requeue running task if state is ready or running
