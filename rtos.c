@@ -11,9 +11,9 @@ uint8_t num_tasks = 1;
 void SysTick_Handler(void)
 {
 	// requeue running task if state is ready or running
-	if (running_task->state >= 3)
+	if (running_task->state >= READY)
 	{
-		running_task->state = 3;
+		running_task->state = READY;
 		enqueue(&queue_list[running_task->prio], running_task);
 	}
 	
@@ -26,7 +26,7 @@ void SysTick_Handler(void)
 
 	// update running task
 	running_task = next_task;
-	running_task->state = 4;
+	running_task->state = RUNNING;
 
 	// invoke PendSV exception
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
@@ -55,7 +55,7 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 	task_tcb->next_task = 0;
 
 	// set state to READY and add to queue
-	task_tcb->state = 3;
+	task_tcb->state = READY;
 	enqueue(&queue_list[prio], task_tcb);
 }
 
@@ -70,7 +70,7 @@ void osKernelInitialize(void)
 		task_id = 5 - i;
 		TCB_array[task_id].task_id = task_id;
 		TCB_array[task_id].stack_pointer = vector_table[0] - 2048 - 1024 * i;
-		TCB_array[task_id].state = 0;
+		TCB_array[task_id].state = INACTIVE;
 		TCB_array[task_id].next_task = 0;
 		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_array[task_id].stack_pointer);
 	}
@@ -110,6 +110,22 @@ void osKernelStart(void)
 		//printf("in idle task\n");
 	}
 }
+
+void osThreadExit(void)
+{
+	__disable_irq();
+	// set state to 1 so it won't be requeued anywhere, effectively terminated
+	running_task->state = TERMINATED;
+	__enable_irq();
+}
+
+void osThreadYield(void)
+{
+	__disable_irq();
+	running_task->state = BLOCKED;
+	
+}
+
 
 __asm void PendSV_Handler(void)
 {

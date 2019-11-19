@@ -13,10 +13,10 @@ void wait_semaphore(Semaphore *s)
 	__disable_irq();
 	s->count--;
 	if (s->count < 0) {
-		running_task->state = 2; // blocked
+		running_task->state = BLOCKED;
 		enqueue_waitlist(&(s->waitlist), running_task);
 		__enable_irq();
-		while(running_task->state < 3); // prevent from continuing prematurely
+		while(running_task->state < READY); // prevent from continuing prematurely
 	}
 	__enable_irq();
 }
@@ -28,7 +28,7 @@ void signal_semaphore(Semaphore *s)
 	if (s->count <= 0)
 	{
 		TCB_t *unblock = dequeue_waitlist(&(s->waitlist));
-		unblock->state = 3; // ready
+		unblock->state = READY; 
 		enqueue(&queue_list[unblock->prio], unblock); // requeue
 	}
 	__enable_irq();

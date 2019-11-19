@@ -11,8 +11,6 @@ Semaphore test_sem;
 
 uint8_t tasknum[] = {1, 2, 3, 4, 5};
 uint32_t test_sums[] = {0, 0, 0, 0, 0, 0};
-extern TCB_t *running_task;
-
 
 
 void test_task(void *arg)
@@ -20,13 +18,14 @@ void test_task(void *arg)
 	uint8_t task = *(uint8_t *)arg;
 
 	wait_semaphore(&test_sem);
-	for (int i = 0; i < 640000; i++)
+	for (int i = 0; i < 10; i++)
 	{
-		test_sums[task]++;
+		printf("running task %d\n", task);
+		//test_sums[task]++;
 	}
 	
 	signal_semaphore(&test_sem);
-	running_task->state = 1;
+	osThreadExit();
 	while(1);
 }
 
