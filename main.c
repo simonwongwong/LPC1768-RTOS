@@ -44,7 +44,7 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 
 	// set state to READY and add to queue
 	task_tcb->state = 3;
-	enqueue(&queue_list[prio], task_tcb, &queue_vector);
+	enqueue(&queue_list[prio], task_tcb);
 }
 
 void osKernelInitialize()
@@ -103,14 +103,14 @@ void SysTick_Handler(void)
 {
 	// determine next task from queue
 	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
-	TCB_t *next_task = dequeue(&queue_list[next_queue], &queue_vector);
+	TCB_t *next_task = dequeue(&queue_list[next_queue]);
 	next_sp = &(next_task->stack_pointer);
 
 	// requeue running task if state is ready or running
 	if (running_task->state >= 3)
 	{
 		running_task->state = 3;
-		enqueue(&queue_list[running_task->prio], running_task, &queue_vector);
+		enqueue(&queue_list[running_task->prio], running_task);
 	}
 
 	// update running task
@@ -128,7 +128,7 @@ void test_task(void *arg)
 		uint8_t tasknum = *(uint8_t *)arg;
 		printf("in task %d\n", tasknum);
 	}
-	running_task->state = 2;
+	running_task->state = 1;
 	while (1);
 }
 
