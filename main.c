@@ -28,18 +28,30 @@ void test_task(void *arg)
 	while(1);
 }
 
+void release_task(void *arg)
+{
+	bool released = release_mutex(&print_mutex);
+	if (released)
+	{
+		printf("successfully stole un-owned mutex");
+	} 
+	else 
+	{
+		printf("\ncould  not release mutex, wrong owner\n");
+	}
+	osThreadExit();
+	while(1);
+}
+
 
 int main(void)
 {
 	printf("\nStarting setup...\n\n");
 
 	osKernelInitialize();
-	osCreateTask(test_task, &tasknum[0], 1);
-	osCreateTask(test_task, &tasknum[1], 3);
-	osCreateTask(test_task, &tasknum[2], 3);
 	osCreateTask(test_task, &tasknum[3], 4);
-	osCreateTask(test_task, &tasknum[4], 4);
-	// init_semaphore(&test_sem, 1);
+	osCreateTask(release_task, &tasknum[4], 4);
+
 	init_mutex(&print_mutex);
 	printf("\nfinishing setup\n\n");
 
