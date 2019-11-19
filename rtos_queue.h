@@ -20,8 +20,8 @@ typedef struct
 	TCB_t *tail;
 } queue;
 
-void enqueue(queue *q, TCB_t *task);
-TCB_t *dequeue(queue *q);
+void enqueue_ready(queue *q, TCB_t *task);
+TCB_t *dequeue_ready(queue *q);
 void enqueue_waitlist(queue *q, TCB_t *task);
 TCB_t *dequeue_waitlist(queue *q);
 

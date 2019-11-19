@@ -2,8 +2,11 @@
 
 extern uint32_t queue_vector;
 
-void enqueue(queue *q, TCB_t *task)
+void enqueue_ready(queue *q, TCB_t *task)
 {
+	// function to enqueue TCB to ready queue
+
+	task->state = READY; // set state to ready
 	if (q->head == 0)
 	{ // enqueue on empty queue
 		q->head = task;
@@ -17,7 +20,7 @@ void enqueue(queue *q, TCB_t *task)
 	}
 }
 
-TCB_t *dequeue(queue *q)
+TCB_t *dequeue_ready(queue *q)
 {
 	TCB_t *next_task;
 	if (q->head == q->tail)

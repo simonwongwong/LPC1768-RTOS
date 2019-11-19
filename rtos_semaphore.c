@@ -28,8 +28,7 @@ void signal_semaphore(Semaphore *s)
 	if (s->count <= 0)
 	{
 		TCB_t *unblock = dequeue_waitlist(&(s->waitlist));
-		unblock->state = READY; 
-		enqueue(&queue_list[unblock->prio], unblock); // requeue
+		enqueue_ready(&queue_list[unblock->prio], unblock); // requeue
 	}
 	__enable_irq();
 }

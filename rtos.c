@@ -13,16 +13,13 @@ void SysTick_Handler(void)
 	// requeue running task if state is ready or running
 	if (running_task->state >= READY)
 	{
-		running_task->state = READY;
-		enqueue(&queue_list[running_task->prio], running_task);
+		enqueue_ready(&queue_list[running_task->prio], running_task);
 	}
 	
 	// determine next task from queue
 	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
-	TCB_t *next_task = dequeue(&queue_list[next_queue]);
+	TCB_t *next_task = dequeue_ready(&queue_list[next_queue]);
 	next_sp = &(next_task->stack_pointer);
-
-
 
 	// update running task
 	running_task = next_task;
@@ -54,9 +51,8 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 	*(PSR - 7) = (uint32_t)args;
 	task_tcb->next_task = 0;
 
-	// set state to READY and add to queue
-	task_tcb->state = READY;
-	enqueue(&queue_list[prio], task_tcb);
+	// add to queue
+	enqueue_ready(&queue_list[prio], task_tcb);
 }
 
 void osKernelInitialize(void)
@@ -122,7 +118,7 @@ void osThreadExit(void)
 void osThreadYield(void)
 {
 	__disable_irq();
-	running_task->state = BLOCKED;
+	running_task->state = READY;
 	
 }
 
