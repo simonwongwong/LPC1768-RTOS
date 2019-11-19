@@ -14,7 +14,6 @@ TCB_t TCB_array[6];
 TCB_t *running_task;
 queue queue_list[8];
 
-
 uint32_t *curr_sp;
 uint32_t *next_sp;
 uint32_t queue_vector = 1;
@@ -62,6 +61,12 @@ void osKernelInitialize()
 		TCB_array[task_id].state = 0;
 		TCB_array[task_id].next_task = 0;
 		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_array[task_id].stack_pointer);
+	}
+	// initialize queue pointers
+	for (int i = 0; i < 8; i++)
+	{
+		queue_list[i].head = 0;
+		queue_list[i].tail = 0;
 	}
 }
 
@@ -118,13 +123,13 @@ void SysTick_Handler(void)
 
 void test_task(void *arg)
 {
-	for(int i = 0; i < 50; i++)
+	for (int i = 0; i < 50; i++)
 	{
 		uint8_t tasknum = *(uint8_t *)arg;
 		printf("in task %d\n", tasknum);
 	}
 	running_task->state = 2;
-	while(1);
+	while (1);
 }
 
 __asm void PendSV_Handler(void)
