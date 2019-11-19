@@ -1,4 +1,4 @@
-#include "queue.h"
+#include "rtos_queue.h"
 
 extern uint32_t queue_vector;
 

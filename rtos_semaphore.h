@@ -1,6 +1,6 @@
 #ifndef RTOS_SEMAPHORE_H
 #define RTOS_SEMAPHORE_H
-#include "queue.h"
+#include "rtos_queue.h"
 
 extern TCB_t *running_task;
 extern queue queue_list[];

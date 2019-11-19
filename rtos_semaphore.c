@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "semaphore.h"
+#include "rtos_semaphore.h"
 
 void init_semaphore(Semaphore *s, int32_t count)
 {
