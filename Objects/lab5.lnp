@@ -3,7 +3,9 @@
 ".\objects\uart.o"
 ".\objects\main.o"
 ".\objects\rtos.o"
-".\objects\queue.o"
+".\objects\rtos_queue.o"
+".\objects\rtos_semaphore.o"
+".\objects\rtos_mutex.o"
 ".\objects\startup_lpc17xx.o"
 ".\objects\system_lpc17xx.o"
 --ro-base 0x00000000 --entry 0x00000000 --rw-base 0x10000000 --entry Reset_Handler --first __Vectors --strict --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols

@@ -22,20 +22,22 @@ Dialog DLL:      TCM.DLL V1.32.0.0
  
 <h2>Project:</h2>
 N:\MTE241\RTOS\lab5.uvprojx
-Project File Date:  11/13/2019
+Project File Date:  11/19/2019
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 5 (build 528)', folder: 'C:\software\Keil_v5\ARM\ARMCC\Bin'
 Rebuild target 'Target 1'
 compiling Retarget.c...
-compiling rtos.c...
 compiling main.c...
 compiling uart.c...
-compiling queue.c...
+compiling rtos_queue.c...
+compiling rtos.c...
+compiling rtos_semaphore.c...
 assembling startup_LPC17xx.s...
+compiling rtos_mutex.c...
 compiling system_LPC17xx.c...
 linking...
-Program Size: Code=2860 RO-data=276 RW-data=72 ZI-data=8576  
+Program Size: Code=3224 RO-data=276 RW-data=76 ZI-data=8620  
 ".\Objects\lab5.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
@@ -62,12 +64,12 @@ Package Vendor: Keil
 
    * Component: Keil::Device:Startup:1.0.0
       Include file:  Device\Include\LPC17xx.h
-      Source file:   Device\Source\system_LPC17xx.c
       Source file:   Device\Source\ARM\startup_LPC17xx.s
       Include file:  RTE_Driver\Config\RTE_Device.h
+      Source file:   Device\Source\system_LPC17xx.c
 
    * Component: ARM::CMSIS:CORE:5.1.1
-Build Time Elapsed:  00:00:00
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>

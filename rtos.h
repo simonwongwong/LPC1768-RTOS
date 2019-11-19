@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "rtos_queue.h"
 #include "rtos_semaphore.h"
+#include "rtos_mutex.h"
 
 typedef void (*rtosTaskFunc_t)(void *args);
 

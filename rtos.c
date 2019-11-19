@@ -119,6 +119,11 @@ void osThreadYield(void)
 {
 	__disable_irq();
 	running_task->state = READY;
+	enqueue_ready(&queue_list[running_task->prio], running_task);
+	__enable_irq();
+
+	// finish timeslice ?
+	while(running_task->state < RUNNING);
 	
 }
 

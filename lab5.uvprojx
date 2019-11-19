@@ -401,14 +401,19 @@
               <FilePath>.\rtos.c</FilePath>
             </File>
             <File>
-              <FileName>queue.c</FileName>
+              <FileName>rtos_queue.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\queue.c</FilePath>
+              <FilePath>.\rtos_queue.c</FilePath>
             </File>
             <File>
-              <FileName>semaphore.c</FileName>
+              <FileName>rtos_semaphore.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\semaphore.c</FilePath>
+              <FilePath>.\rtos_semaphore.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtos_mutex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\rtos_mutex.c</FilePath>
             </File>
           </Files>
         </Group>
