@@ -1,3 +1,6 @@
+#ifndef RTOS_QUEUE_H
+#define RTOS_QUEUE_H
+
 #include <stdint.h>
 typedef struct TCB_t TCB_t;
 
@@ -20,3 +23,5 @@ void enqueue(queue *q, TCB_t *task);
 TCB_t *dequeue(queue *q);
 void enqueue_waitlist(queue *q, TCB_t *task);
 TCB_t *dequeue_waitlist(queue *q);
+
+#endif

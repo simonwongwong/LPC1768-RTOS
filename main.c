@@ -4,6 +4,7 @@
  */
 #include <LPC17xx.h>
 #include "queue.h"
+#include "semaphore.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,6 +14,7 @@ typedef void (*rtosTaskFunc_t)(void *args);
 TCB_t TCB_array[6];
 TCB_t *running_task;
 queue queue_list[8];
+Semaphore test_sem;
 
 uint32_t *curr_sp;
 uint32_t *next_sp;
@@ -20,6 +22,7 @@ uint32_t queue_vector = 1;
 uint8_t num_tasks = 1;
 
 uint8_t tasknum[] = {1, 2, 3, 4, 5};
+uint32_t test_sums[] = {0, 0, 0, 0, 0, 0};
 
 void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 {
@@ -101,17 +104,19 @@ void osKernelStart()
 
 void SysTick_Handler(void)
 {
-	// determine next task from queue
-	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
-	TCB_t *next_task = dequeue(&queue_list[next_queue]);
-	next_sp = &(next_task->stack_pointer);
-
 	// requeue running task if state is ready or running
 	if (running_task->state >= 3)
 	{
 		running_task->state = 3;
 		enqueue(&queue_list[running_task->prio], running_task);
 	}
+	
+	// determine next task from queue
+	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
+	TCB_t *next_task = dequeue(&queue_list[next_queue]);
+	next_sp = &(next_task->stack_pointer);
+
+
 
 	// update running task
 	running_task = next_task;
@@ -123,14 +128,19 @@ void SysTick_Handler(void)
 
 void test_task(void *arg)
 {
-	for (int i = 0; i < 50; i++)
+	uint8_t task = *(uint8_t *)arg;
+
+	wait_semaphore(&test_sem);
+	for (int i = 0; i < 640000; i++)
 	{
-		uint8_t tasknum = *(uint8_t *)arg;
-		printf("in task %d\n", tasknum);
+		test_sums[task]++;
 	}
+	
+	signal_semaphore(&test_sem);
 	running_task->state = 1;
-	while (1);
+	while(1);
 }
+
 
 __asm void PendSV_Handler(void)
 {
@@ -156,7 +166,7 @@ __asm void PendSV_Handler(void)
 
 int main(void)
 {
-	printf("\nStarting...\n\n");
+	printf("\nStarting setup...\n\n");
 
 	osKernelInitialize();
 	osCreateTask(test_task, &tasknum[0], 1);
@@ -164,6 +174,8 @@ int main(void)
 	osCreateTask(test_task, &tasknum[2], 3);
 	osCreateTask(test_task, &tasknum[3], 4);
 	osCreateTask(test_task, &tasknum[4], 4);
-	printf("\nfinishing...\n\n");
+	init_semaphore(&test_sem, 1);
+	printf("\nfinishing setup\n\n");
+
 	osKernelStart();
 }
