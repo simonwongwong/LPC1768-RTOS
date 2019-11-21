@@ -4,6 +4,7 @@ extern TCB_t *running_task;
 
 typedef struct {
     Semaphore sem;
+    uint8_t highest_prio;
     TCB_t *owner;
 } Mutex;
 

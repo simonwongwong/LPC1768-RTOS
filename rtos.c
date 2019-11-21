@@ -58,7 +58,6 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 void osKernelInitialize(void)
 {
 	uint32_t *vector_table = 0x0;
-	printf("main stack base pointer: %x\n", vector_table[0]);
 	uint8_t task_id;
 	// initialize TCB stack pointers
 	for (int i = 0; i < 6; i++)
@@ -68,7 +67,6 @@ void osKernelInitialize(void)
 		TCB_array[task_id].stack_pointer = vector_table[0] - 2048 - 1024 * i;
 		TCB_array[task_id].state = INACTIVE;
 		TCB_array[task_id].next_task = 0;
-		printf("TCB[%d] stack pointer address: %x\n", task_id, TCB_array[task_id].stack_pointer);
 	}
 	// initialize queue pointers
 	for (int i = 0; i < 8; i++)

@@ -12,5 +12,6 @@ void osKernelInitialize(void);
 void osKernelStart(void);
 void osThreadExit(void);
 void SysTick_Handler(void);
+void osThreadYield(void);
 __asm void PendSV_Handler(void);
 
