@@ -1,4 +1,5 @@
 #include "rtos.h"
+#define max_of(x,y) ((x) >= (y)) ? (x) : (y)
 
 TCB_t *running_task;
 queue queue_list[8];
@@ -13,13 +14,20 @@ void SysTick_Handler(void)
 	// requeue running task if state is ready or running
 	if (running_task->state >= READY)
 	{
-		enqueue_ready(&queue_list[running_task->prio], running_task);
+		uint8_t task_prio = (running_task->mutex_prio) ? *running_task->mutex_prio : running_task->prio;
+		enqueue_ready(&queue_list[task_prio], running_task);
 	}
 	
 	// determine next task from queue
-	uint32_t next_queue = 31 - (uint8_t)__clz(queue_vector);
-	TCB_t *next_task = dequeue_ready(&queue_list[next_queue]);
+	uint32_t next_queue;
+	TCB_t *next_task;
+	do {
+		next_queue = 31 - (uint8_t)__clz(queue_vector);
+		next_task = dequeue_ready(&queue_list[next_queue]);
+	} while (next_task->state < READY);
+	
 	next_sp = &(next_task->stack_pointer);
+	
 
 	// update running task
 	running_task = next_task;
@@ -37,6 +45,7 @@ void osCreateTask(rtosTaskFunc_t func, void *args, uint8_t prio)
 
 	// assign priority
 	task_tcb->prio = prio;
+	task_tcb->mutex_prio = 0;
 	// set addr of PSR to base of stack
 	uint32_t *PSR = (uint32_t *)task_tcb->stack_pointer;
 
@@ -117,10 +126,9 @@ void osThreadYield(void)
 {
 	__disable_irq();
 	running_task->state = READY;
-	enqueue_ready(&queue_list[running_task->prio], running_task);
 	__enable_irq();
 
-	// finish timeslice ?
+	// finish timeslice
 	while(running_task->state < RUNNING);
 	
 }

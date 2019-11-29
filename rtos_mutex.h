@@ -1,6 +1,7 @@
 #include "rtos_semaphore.h"
 #include <stdbool.h>
 extern TCB_t *running_task;
+extern queue queue_list[8];
 
 typedef struct {
     Semaphore sem;

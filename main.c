@@ -54,7 +54,7 @@ void test_inherit_prio_2(void *arg)
 	printf("Task 2: blocking on Semaphore\n");
 	wait_semaphore(&demo_semaphore);
 	
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < 10; i++)
 	{	
 		printf("running task %d\n", task);
 	}
@@ -88,6 +88,7 @@ void test_mutex_task(void *arg)
 	uint8_t task = *(uint8_t *)arg;
 
 	acquire_mutex(&demo_mutex);
+	printf("\nTask %d: acquired mutex\n", task);
 	for (int i = 0; i < 30; i++)
 	{
 		printf("running task %d\n", task);
@@ -108,9 +109,9 @@ void release_task(void *arg)
 	} 
 	else 
 	{
-		printf("Could  not release mutex, wrong owner\n");
+		printf("Could  not release mutex, wrong owner\nBlocking on mutex\n");
 	}
-	printf("Blocking on mutex owned by task %d\n", demo_mutex.owner->task_id);
+	
 	acquire_mutex(&demo_mutex);
 	for (int i = 0; i < 30; i++)
 	{
@@ -187,11 +188,11 @@ int main(void)
 	// uncomment one demo function to see it work
 	printf("\nStarting setup...\n\n");
 	osKernelInitialize();
-	//demo_mutex_ownership();
+	demo_mutex_ownership();
 	//demo_fpp();
 	//demo_semaphore_usage();
-	demo_inherit_prio();
-	printf("\nfinishing setup\n\n");
+	//demo_inherit_prio();
+	printf("finishing setup\n\n");
 
 	osKernelStart();
 }

@@ -11,6 +11,7 @@ struct TCB_t
 	uint32_t stack_pointer;
 	thread_state_t state; // 0: inactive, 1: terminated, 2: blocked, 3: ready, 4: running
 	uint8_t prio;  // priorities 0 to 7, with 0 being lowest (IDLE task)
+	uint8_t *mutex_prio;
 	TCB_t *next_task;
 };
 
