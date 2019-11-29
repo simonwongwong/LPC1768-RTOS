@@ -1,22 +1,11 @@
-* μVision is not a powerful IDE. You may find it easier to author your code in an IDE that you’re familiar with, and use μVision only for compiling, uploading, and debugging.
-* Sometimes, code will work on the actual board but not on the simulator because the simulator does not simulate all hardware peripherals. If you’re in the lab, it's usually easier to just debug on the board itself.
-* The simulator begins with memory zeroed, but the actual board might not. If you forget to initialize your variables, this could lead to code working on the simulator but not the board.
-* The LPC1768 (as configured) has 32KiB of RAM. Keep this in mind when allocating memory.
-* Don't forget to check Use MicroLIB if you are using dynamic memory allocation (malloc and free) or multitasking.
-* When using the simulator, you will get error #65 where you can't write to certain memory locations; you must remap the memory in the simulator and allow write access to that address.  A typical solution is to create a config file (eg 	simulation.ini) containing the following two lines:
-* MAP 0x40000000, 0x4007FFFF READ WRITE
-* MAP 0x40080000, 0x400FFFFF READ WRITE
-* Then, right click Target 1 and select Options for Target [...]→Debug→Initialization File. Browse to the config file. This will add write access to these memory address ranges every time you run the simulator.
-* When the code runs for a few iterations but inexplicably fails (stops executing), this is usually an indication that the stack has been blown, or if you are using the heap, that the heap has run out of space. Increasing the stack or 	heap size should fix things. If you are using tasks, you can check for stack overflow by selecting the corresponding flag in the RTX configuration file.
-* It is much easier to use the UART serial output for debugging print statements than it is to print to the LCD screen.
-* Tasks are killed using osThreadTerminate or osThreadExit; to switch between tasks of the same priority, use osThreadYield.
-* When trying to use the Keil board UART, sometimes you'll be able to see output on one device and not on another. If this is the case, it may be that you have to change your COM port on PuTTY (which corresponds to the computer port 	connected to the Keil board).
-* The μVision compiler will not catch fatal errors that are not directly syntax but will still cause a complete system crash. An example is trying to use task-related functions or a printf during an interrupt service routine. These are 	sometimes difficult to identify as the problem.
-* When authoring a new data structure, always start with a shell for each function, even if it does nothing (if it returns an int, have it return 0; if it returns a pointer, have it return NULL). This makes it easier to test if your 	code compiles before you’ve fully written everything.
-* The number of tasks in the Keil RTX5 is limited by the available memory. To increase the number of tasks, the stack size must be decreased. Conversely, to increase the stack size closer to the maximum, the number of tasks must be 	decreased. This memory is based on the total board memory available, so if you decrease it in the startup file you can allocate more for your tasks. To check whether a task was successfully created (ie. Sufficient memory was available), 	check whether the return value of osThreadNew is NULL (fail) or not (success).
-* You can download uVision on your personal computer in evaluation mode, however not all peripheral devices exist in the simulator in eval mode, such as the main oscillator and UART. In order to run the code in simulation, some 			modifications must be made to the environment and code. Here is one way to run in simulation:
-	- Undef `CLOCK_SETUP` (or define to 0) in `system_LCP17xx.c`
-	- Undef `__RTGT_UART`
-* By default, the debug exceptions (for breakpoints, etc) has a higher priority than both the PendSV and SysTick exceptions. Keep this in mind when debugging your code – Stepping through your code line by line will prevent the PendSV 	and SysTick ISRs from running unless you modify the exception priorities.
-* The LR/R14 register is the Link Register, which holds the address to return to once a function call completes. This means all assembly functions should either end with BX LR or POP PC in order to return execution to the caller. If the 	function is a leaf function (Does not call any other functions), then simply use BX LR to return. If the function is not a leaf, the LR must be saved to the stack, so instead start the function by PUSH {LR} and end by POP {PC}.
-* Remember to reach out to upper years if you need help! We’ve worked through lots these of weird issues before, and we might be able to save you time and give debugging advice 😊
+# Description
+
+A basic real-time operating system made for the LPC1768.
+
+Written for extra credit in my real-time operating systems course.
+
+Includes:
+
+* mutexes with priority inheritance and ownership tests on release
+* blocking semaphores
+* fixed priority pre-emptive scheduling
